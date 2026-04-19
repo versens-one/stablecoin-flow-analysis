@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import stats
 
 df = pd.read_csv('stablecoin_data.csv')
 df['amount_usd'] = df['amount_usd'].astype(float)
@@ -19,7 +18,7 @@ col4.metric('Unique Senders', f"{df['sender'].nunique():,}")
 
 st.subheader('Filters')
 col1, col2 = st.columns(2)
-selected_symbol = col1.multiselect('Stablecoin', df['symbol'].unique(), default=df['symbol'].unique())
+selected_symbol = col1.multiselect('Stablecoin', df['symbol'].unique(), default=list(df['symbol'].unique()))
 min_amount = col2.slider('Min transfer size ($M)', 0, 1000, 100)
 
 df_filtered = df[
@@ -56,7 +55,11 @@ wallet_volume = df_filtered.groupby('sender')['amount_usd'].sum()
 total_volume = wallet_volume.sum()
 market_shares = wallet_volume / total_volume
 hhi = (market_shares ** 2).sum()
-gini_val = 1 - 2 * np.trapz(np.cumsum(np.sort(wallet_volume.values)) / wallet_volume.sum(), np.linspace(0, 1, len(wallet_volume)))
+
+sorted_vals = np.sort(wallet_volume.values)
+n = len(sorted_vals)
+gini_val = (2 * np.sum(np.arange(1, n+1) * sorted_vals) / (n * sorted_vals.sum())) - (n + 1) / n
+
 top5 = market_shares.nlargest(5).sum()
 
 col1, col2, col3 = st.columns(3)
